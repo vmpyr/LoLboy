@@ -30,20 +30,17 @@ client.on('message', async (message) => {
 
             case 'lol':
                 prob = Math.random();
-                if (prob < 0.25) {
+                if (prob < 0.33) {
                     message.channel.send(Memer.joke());
                 }
-                else if (prob > 0.25 && prob < 0.5) {
+                else if (prob > 0.33 && prob < 0.66) {
                     let embed = new Discord.MessageEmbed()
                         .setImage(Memer.meme().url);
                     message.channel.send(embed);
                 }
-                else if (prob > 0.75) {
-                    message.channel.send(Memer.pun());
-                }
                 else {
-                    message.channel.send(Memer.showerThought())
-                }
+                    message.channel.send(Memer.pun());
+		}
                 break;
 
             case 'hehe':

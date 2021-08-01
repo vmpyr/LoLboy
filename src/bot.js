@@ -4,7 +4,8 @@ const Discord = require('discord.js');
 const Memer = require('random-jokes-api');
 const ytdl = require('ytdl-core');
 const getytlink = require('youtube-search');
-const util = require('util')
+const util = require('util');
+// const ytdl = require('ytdl-core-discord');
 
 const queue = new Map();
 const client = new Discord.Client();
@@ -56,18 +57,23 @@ client.on('message', async (message) => {
                 break;
 
             case 'play':
-                const opts = {
-                    maxResults: 1,
-                    key: process.env.LOLBOY_YT_API_TOKEN
-                };
-                getlink = util.promisify(getytlink);
-                var result;
-                try {
-                    result = await getlink(args.join(), opts);
-                } catch (err) {
-                    console.log("ytlink error: ", err);
+                if (args.length == 0) {
+                    resumeMusic(message, serverQueue);
                 }
-                songPlayer(message, serverQueue, result);
+                else {
+                    const opts = {
+                        maxResults: 1,
+                        key: process.env.LOLBOY_YT_API_TOKEN
+                    };
+                    getlink = util.promisify(getytlink);
+                    var result;
+                    try {
+                        result = await getlink(args.join(), opts);
+                    } catch (err) {
+                        console.log("ytlink error: ", err);
+                    }
+                    songPlayer(message, serverQueue, result);
+                }
                 break;
             case 'next':
                 next(message, serverQueue);
@@ -124,7 +130,7 @@ async function songPlayer(message, serverQueue, ytlink) {
             try {
                 var connection = await voiceChannel.join();
                 queueConstruct.connection = connection;
-                play(message.guild, queueConstruct.songs[0]);
+                playSong(message.guild, queueConstruct.songs[0]);
             } 
             catch (err) {
                 console.log(err);
@@ -167,16 +173,33 @@ function pauseMusic(message, serverQueue) {
     if (!message.member.voice.channel) {
         return message.channel.send('get into a voice channel first, then only you can ask me to pause my beautiful voice. 😌');
     }
-    if (!serverQueue) {
+    else if (!serverQueue) {
         return message.channel.send('There is no song that I could pause!');
     }
-    if (serverQueue.connection.dispatcher.paused) {
+    else if (serverQueue.connection.dispatcher.paused) {
         return message.channel.send('Song already paused!');
-    } 
-	serverQueue.connection.dispatcher.pause();
+    }
+    else {
+	    serverQueue.connection.dispatcher.pause();
+    }
 }
 
-function play(guild, song) {
+function resumeMusic(message, serverQueue){
+    if (!message.member.voice.channel) {
+        return message.channel.send('get into a voice channel first, then only you can ask me to resume my beautiful voice. 😌');
+    }
+    else if (!serverQueue) {
+        return message.channel.send('There is no song that I could resume!');
+    }
+    else if (!serverQueue.connection.dispatcher.paused) {
+        return message.channel.send("I'm already singing!");
+    } 
+    else {
+        serverQueue.connection.dispatcher.resume();
+    }
+}
+
+function playSong(guild, song) {
     const serverQueue = queue.get(guild.id);
     
     if (!song) {
@@ -189,7 +212,7 @@ function play(guild, song) {
         .play(ytdl(song.url))
         .on("finish", () => {
             serverQueue.songs.shift();
-            this.play(guild, serverQueue.songs[0]);
+            playSong(guild, serverQueue.songs[0]);
         })
         .on("error", error => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);

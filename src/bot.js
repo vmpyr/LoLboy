@@ -31,17 +31,23 @@ client.on('message', async (message) => {
 
             case 'lol':
                 prob = Math.random();
-                if (prob < 0.33) {
+                if (prob <= 0.2) {
                     message.channel.send(Memer.joke());
                 }
-                else if (prob > 0.33 && prob < 0.66) {
+                else if (prob > 0.2 && prob <= 0.4) {
                     let embed = new Discord.MessageEmbed()
                         .setImage(Memer.meme().url);
                     message.channel.send(embed);
                 }
+                else if (prob > 0.4 && prob <= 0.6) {
+                    message.channel.send('Try this website xD\n\n' + Memer.uselessweb());
+                }
+                else if (prob > 0.6 && prob <= 0.8) {
+                    message.channel.send(Memer.showerThought());
+                }
                 else {
                     message.channel.send(Memer.pun());
-		}
+		        }
                 break;
 
             case 'hehe':
@@ -87,6 +93,12 @@ client.on('message', async (message) => {
             case 'song-list':
                 songList(message, serverQueue);
                 break;
+            case 'repeat':
+                songRepeat(message, serverQueue);
+            break;
+            case 'shuffle':
+                songShuffle(message, serverQueue);
+            break;
 
             default:
                 message.reply(`check -help and put in a valid command, you blind slug 🙂`);
@@ -130,7 +142,7 @@ async function songPlayer(message, serverQueue, ytlink) {
             try {
                 var connection = await voiceChannel.join();
                 queueConstruct.connection = connection;
-                playSong(message.guild, queueConstruct.songs[0]);
+                playSong(message.guild, queueConstruct.songs[i]);
             } 
             catch (err) {
                 console.log(err);
@@ -149,6 +161,9 @@ async function songPlayer(message, serverQueue, ytlink) {
     }
 } 
 
+var shuffle = false
+var repeat = false;
+var i = 0;
 
 function next(message, serverQueue) {
     if (!message.member.voice.channel)
@@ -161,10 +176,12 @@ function next(message, serverQueue) {
 function stop(message, serverQueue) {
     if (!message.member.voice.channel)
         return message.channel.send("get into a voice channel first, then only you can ask me to stop singing. 😌");
-      
+    
     if (!serverQueue)
         return message.channel.send("There is no song that I could stop!");
-      
+    i = 0;
+    shuffle = false;
+    repeat = false;
     serverQueue.songs = [];
     serverQueue.connection.dispatcher.end();
 }
@@ -199,6 +216,32 @@ function resumeMusic(message, serverQueue){
     }
 }
 
+function songRepeat(message, serverQueue){
+    if (!message.member.voice.channel) {
+        return message.channel.send('get into a voice channel first, then only you can ask me to repeat my beautiful voice. 😌');
+    }
+    else if (!serverQueue) {
+        return message.channel.send('There is no song that I could repeat!');
+    } 
+    else {
+        repeat = true;
+        return message.channel.send("LoLboy will now repeat songs!");
+    }
+}
+
+function songShuffle(message, serverQueue) {
+    if (!message.member.voice.channel) {
+        return message.channel.send('get into a voice channel first, then only you can ask me to shuffle my beautiful voice. 😌');
+    }
+    else if (!serverQueue) {
+        return message.channel.send('There are no songs to shuffle!');
+    } 
+    else {
+        shuffle = true;
+        return message.channel.send("LoLboy will now shuffle songs!");
+    }
+}
+
 function playSong(guild, song) {
     const serverQueue = queue.get(guild.id);
     
@@ -209,10 +252,24 @@ function playSong(guild, song) {
     }
   
     const dispatcher = serverQueue.connection
-        .play(ytdl(song.url, { filter : "audio" }))
+        .play(ytdl(song.url, { filter : "audioonly" }))
         .on("finish", () => {
-            serverQueue.songs.shift();
-            playSong(guild, serverQueue.songs[0]);
+            i++;
+            if (repeat == true) {
+                if (i == serverQueue.songs.length) {
+                    i = 0;
+                }
+            }
+            else {
+                if (i == serverQueue.songs.length) {
+                    i = 0;
+                    serverQueue.songs = [];
+                    return;
+                }
+            }
+            playSong(guild, serverQueue.songs[i]);
+            console.log(i);
+            console.log(repeat);
         })
         .on("error", error => console.error(error));
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
@@ -220,3 +277,6 @@ function playSong(guild, song) {
 }
   
 client.login(process.env.LOLBOY_TOKEN);
+
+
+// write shuffle completely and perfect pause and add song list, perfect repeat as well 
